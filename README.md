@@ -40,10 +40,27 @@ You can use projects to restrict the source and destinations cluster/namespace
 for the applications of the project.
 
 You can also use 'Project Roles' to define permissions for the applications.
+For example, you can specify the allowed roles, and leave out application deletion permission.
 See file no. 4 for an example project role. 
+To work with project roles, you will also need to create JWT tokens using argocd command.
 
 **Sync**: The argocd process of making the actual state (state on K8s cluster) same
-as desired state (as defined in the source)
+as desired state (as defined in the source). Only out of sync applications are synced back.
+You can enable automated sync to true. But this does not delete a resource removed at source.
+For this, enable another sync property => prune = true.
+There is another sync option called selfHeal. If set to true, any changes made to live 
+cluster will trigger the sync process to bring cluster back to desired state.
+You can set these properties in application yaml, CLI, or via browser.
+
+Sync provides us hooks like PreSync, PostSync, SyncFail. For eg, we can use PostSync to send notifications.
+Sync waves are further used to order the manifest files within one stage of sync operation.
+-ve wave values are also allowed. Lower wave value gets executed first.
+
+An example of an application that deploys Sync wave jobs:
+https://github.com/mabusaa/argocd-course-apps-definitions/blob/main/applications%20and%20projects/sync-phases-waves/application%20-%20sync%20waves.yaml
+
+The waves that above uses:
+https://github.com/mabusaa/argocd-example-apps/blob/master/sync-waves/manifests.yaml
 
 **Argocd components:**
 
@@ -96,6 +113,64 @@ https://github.com/argoproj/argo-cd/raw/stable/manifests/core-install.yaml
 Just as done for setting up browser above, do port forwarding, and login to cli using
 admin user and secret pwd. To verify cli setup, run command 'argocd cluster list'
 
+**Private repo as source**
+
+https://argo-cd.readthedocs.io/en/stable/user-guide/private-repositories/#github-app-credential
+
+This also covers 'Credential templates', to re-use credentials across repos if they share common pwd.
+
+**Diffing customisation**
+
+You can choose to ignore certain resources from being synced.
+You can use JSON path (pointers), JQ path expressions, or sepcific managers in metadata.managedFields.
+A good use case when to use diffing customisation is when you are using istio, to ignore clientConfig: caBundle.
+
+**Destination Cluster**
+
+Argocd can by default deploy to same cluster where it itself is hosted.
+But to deploy to remote cluster, the remote cluster information
+is exposed via a Secret, which has a special label of 'argocd.argoproj.io/secret-type:cluster'
+Cluster data required: name, server (host) url, config (authN details), and namespaces in the cluster.
+
+Eg. of an application pointing to a remote cluster: https://github.com/mabusaa/argocd-course-apps-definitions/blob/main/applications%20and%20projects/application%20-%20remote%20cluster.yaml
+
+Secret with cluster details: https://github.com/mabusaa/argocd-course-apps-definitions/blob/main/clusters/staging-digitalocean.yaml
+
+**App of apps patter**
+
+Managing argocd applications using kubectl can become cumbersome. App of apps patter helps here, 
+as only the root argocd application is deployed using kubectl, and this app has a source = directory path.
+All new applications are then kept at the path specified, and they then get provisioned automatically.
+
+Eg. of app of apps: https://github.com/mabusaa/argocd-course-app-of-apps
 
 
+**Application Set**
+
+It is a controller and a CRD that automates argocd application creation. 
+
+ApplicationSets use 'Geberators' to generate parameters of application template. 
+Types of generators:
+1. List generator
+2. Cluster generator
+3. Git generator
+4. Matrix generator
+5. Merge generator
+6. SCM provider generator
+7. Pull request generator
+8. Cluster decision resource generator
+
+See sample file no. 6 for an example application set using a list generator.
+
+Example of cluster generator:
+
+https://github.com/mabusaa/argocd-course-apps-definitions/blob/main/application%20set/cluster-generator-matching-labels.yaml
+
+https://github.com/mabusaa/argocd-course-apps-definitions/blob/main/application%20set/cluster-generator-all.yaml
+
+Git directory generator: https://github.com/mabusaa/argocd-course-apps-definitions/blob/main/application%20set/git-directory-generator.yaml
+
+Matrix generator: https://github.com/mabusaa/argocd-course-apps-definitions/blob/main/application%20set/matrix-generator.yaml
+
+Pull request generator: https://github.com/mabusaa/argocd-course-apps-definitions/blob/main/application%20set/pull-request-generator.yaml
 
