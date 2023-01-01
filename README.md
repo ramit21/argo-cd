@@ -136,7 +136,7 @@ Eg. of an application pointing to a remote cluster: https://github.com/mabusaa/a
 
 Secret with cluster details: https://github.com/mabusaa/argocd-course-apps-definitions/blob/main/clusters/staging-digitalocean.yaml
 
-**App of apps patter**
+**App of apps pattern**
 
 Managing argocd applications using kubectl can become cumbersome. App of apps patter helps here, 
 as only the root argocd application is deployed using kubectl, and this app has a source = directory path.
